@@ -44,7 +44,6 @@ module.exports = {
     },
     async login(req,res){
         const { email_pessoa, senha_pessoa } = req.body;
-        console.log('login', email_pessoa, senha_pessoa)
         Pessoas.findOne({email_pessoa}, function(err,user){
             console.log(email_pessoa)
             if(err){
@@ -75,4 +74,30 @@ module.exports = {
             }
         })
     },
+    async checkToken(req, res) {
+        const token = req.body.token || req.query.token || req.cookies.token || req.headers['x-access-token']
+        req.token = token
+        if(!token) {
+            req.json({status:401, msg: "Não autorizado: Token inexistente"})
+
+        } else {
+            jwt.verify(token, secret, function(err, decaded){
+                if(err){
+                    res.json({status:401, msg: "Não autorizado: Token invalido!"})
+                } else {
+                    req.email_pessoa = decaded.email_pessoa
+                    res.json({status:200})
+                }
+            })
+        }
+    },
+    async destroyToken(req, res){
+        const token = req.headers.token
+        if(token){
+            res.cookie('token', null, {httpOnly:true})
+        } else {
+            res.status(401).send("Logout não autorizado")
+        }
+        res.send("Sessão finalizada com sucesso")
+    }
 }
